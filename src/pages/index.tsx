@@ -1,10 +1,16 @@
 // pages/index.tsx
 
 import Head from 'next/head';
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent } from 'react'; // Eliminado useEffect
 import { FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+
+// --- SE HAN ELIMINADO TODAS LAS IMPORTACIONES DEL CHAT NATIVO ANTERIOR ---
+// import ChatButton from '../components/ChatButton';
+// import ChatWindow from '../components/ChatWindow';
+// import { ClientConversation, ClientMessage } from '../src/types/chat'; // Eliminado
+
 
 // Definición de tipos para los detalles de captura de PayPal
 interface PayPalCaptureDetailsForIndex {
@@ -38,20 +44,20 @@ const DynamicPayPalButton = dynamic(() => import('../components/PayPalButton'), 
 // Define faqItems FUERA del componente Home para evitar el error de referencia antes de la definición
 const faqItems: FAQItem[] = [
   {
-    question: '¿Qué es el ITBIS y cómo me afecta?',
-    answer: 'El Impuesto sobre Transferencias de Bienes Industrializados y Servicios (ITBIS) es el equivalente al Impuesto al Valor Agregado (IVA) en República Dominicana. Grava la transferencia e importación de bienes industrializados, así como la prestación de servicios. Te afecta al comprar productos o contratar servicios gravados, ya que el impuesto se añade al precio final.',
+    question: '¿Cuánto tiempo tarda un proceso migratorio?',
+    answer: 'El tiempo varía significativamente según el país, el tipo de visado y las circunstancias individuales. Durante tu consulta gratuita, te daremos una estimación más precisa.',
   },
   {
-    question: '¿Quiénes deben pagar Impuesto Sobre la Renta (ISR)?',
-    answer: 'El Impuesto Sobre la Renta (ISR) debe ser pagado por toda persona natural o jurídica residente o domiciliada en la República Dominicana, y por las sucesiones indivisas, por las rentas de fuente dominicana y de fuente mundial. Las personas físicas no residentes también deben pagar por rentas de fuente dominicana.',
+    question: '¿RHAI garantiza la aprobación del visado?',
+    answer: 'Ninguna asesoría puede garantizar la aprobación de un visado, ya que la decisión final recae en las autoridades migratorias. Sin embargo, en RHAI maximizamos tus posibilidades al asegurar que tu solicitud cumpla con todos los requisitos y se presente de la manera más sólida posible.',
   },
   {
-    question: '¿Qué tipo de gastos son deducibles de impuestos?',
-    answer: 'Los gastos deducibles son aquellos necesarios para la obtención de la renta gravada y para la conservación de su fuente. Incluyen, entre otros, salarios, alquileres de oficina, servicios profesionales, compra de insumos, y gastos de depreciación. Es crucial mantener registros detallados para su correcta justificación.',
+    question: '¿Qué tipo de casos migratorios manejan?',
+    answer: 'En RHAI manejamos una amplia gama de casos, incluyendo visados de trabajo, estudio, reunificación familiar, residencia permanente y ciudadanía. Te invitamos a agendar una consulta para evaluar tu situación específica.',
   },
   {
-    question: '¿Cómo puedo registrarme como contribuyente ante la DGII?',
-    answer: 'Puedes registrarte como contribuyente obteniendo tu Registro Nacional de Contribuyentes (RNC) ante la Dirección General de Impuestos Internos (DGII). Esto puede hacerse de forma presencial en las oficinas de la DGII o, para algunos casos, a través de su oficina virtual. Necesitarás documentos de identificación y, para empresas, los documentos constitutivos.',
+    question: '¿Ofrecen asesoría en otros idiomas además del español?',
+    answer: 'Nuestra especialidad es el apoyo a la comunidad hispana, por lo que nuestra comunicación principal es en español. Sin embargo, contamos con recursos para asistirte si necesitas soporte en otros idiomas.',
   },
 ];
 
@@ -60,7 +66,39 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [selectedProductPrice, setSelectedProductPrice] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState<string>('');
-  const [isCustomAmountSelected, setIsCustomAmountSelected] = useState<boolean>(true); // Se establece en true por defecto
+  const [isCustomAmountSelected, setIsCustomAmountSelected] = useState<boolean>(false);
+
+  // --- SE HA ELIMINADO TODO EL ESTADO Y LÓGICA PARA EL CHAT EN VIVO NATIVO ---
+  // const [isChatOpen, setIsChatOpen] = useState(false);
+  // const [userId, setUserId] = useState<string>('');
+  // const [conversationId, setConversationId] = useState<string>('');
+
+  // SE HA ELIMINADO EL useEffect RELACIONADO CON EL CHAT NATIVO
+  // useEffect(() => {
+  //   let currentUserId = localStorage.getItem('rhai_chat_userId');
+  //   if (!currentUserId) {
+  //     currentUserId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  //     localStorage.setItem('rhai_chat_userId', currentUserId);
+  //   }
+  //   setUserId(currentUserId);
+
+  //   const fetchOrCreateConversation = async (id: string) => {
+  //     try {
+  //       const res = await fetch(`/api/chat/${id}`);
+  //       if (!res.ok) {
+  //         throw new Error(`Error HTTP! estado: ${res.status}`);
+  //       }
+  //       const data = await res.json();
+  //       setConversationId(data.conversationId);
+  //     } catch (error) {
+  //       console.error('Error al obtener o crear conversación:', error);
+  //     }
+  //   };
+
+  //   if (currentUserId) {
+  //     fetchOrCreateConversation(currentUserId);
+  //   }
+  // }, []);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuMenuOpen(!isMobileMenuOpen);
@@ -72,16 +110,20 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
 
   // Define tus opciones de pago aquí
   const paymentOptions = [
-    { id: 'monto_abierto', name: 'Aporte (Monto Abierto)', price: '' }, // Precio vacío para indicar que es personalizable
+    { id: 'consulta', name: 'Consulta Migratoria', price: '25.00' },
+    { id: 'asesoria_extra', name: 'Proceso Original (Ejemplo)', price: '100.00' },
+    // Opción de Donación con un monto fijo (puedes ajustar el precio si lo deseas)
+    { id: 'donacion_fija', name: 'Donación Fija', price: '10.00' },
+    { id: 'monto_abierto', name: 'Donación (Monto Abierto)', price: '' }, // Precio vacío para indicar que es personalizable
   ];
 
   const handlePaymentSuccess = (details: PayPalCaptureDetailsForIndex) => {
     console.log('Pago exitoso en Index.tsx:', details);
-    const payerName = details.payer?.name?.given_name || 'Estimado Contribuyente';
+    const payerName = details.payer?.name?.given_name || 'Estimado Cliente';
     alert(`¡Gracias por tu pago, ${payerName}!`);
     setSelectedProductPrice(null);
     setCustomAmount('');
-    setIsCustomAmountSelected(true); // Mantener el monto personalizado seleccionado después del éxito
+    setIsCustomAmountSelected(false);
   };
 
   const handlePaymentError = (error: Error) => {
@@ -104,19 +146,29 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
 
   // Función para manejar la selección de una opción de pago
   const handleOptionSelect = (price: string, isCustom: boolean) => {
-    // Solo "monto_abierto" está disponible ahora, por lo que siempre será personalizado
-    setIsCustomAmountSelected(true);
-    setSelectedProductPrice(customAmount && parseFloat(customAmount) > 0 ? customAmount : null);
+    if (isCustom) {
+      setIsCustomAmountSelected(true);
+      setSelectedProductPrice(customAmount && parseFloat(customAmount) > 0 ? customAmount : null);
+    } else {
+      setIsCustomAmountSelected(false);
+      setCustomAmount('');
+      setSelectedProductPrice(price);
+    }
   };
 
   const finalPaymentAmount = isCustomAmountSelected ? customAmount : selectedProductPrice;
   const isPayPalButtonEnabled = finalPaymentAmount && parseFloat(finalPaymentAmount) > 0;
 
+  // SE HA ELIMINADO LA FUNCIÓN toggleChat YA NO ES NECESARIA
+  // const toggleChat = () => {
+  //   setIsChatOpen(!isChatOpen);
+  // };
+
   return (
     <>
       <Head>
-        <title>ImpuestosRD: Tu Asesoría Fiscal Confiable en República Dominicana</title>
-        <meta name="description" content="ImpuestosRD te guía en tus obligaciones fiscales en República Dominicana. Asesoría confiable y personalizada sobre ITBIS, Impuesto Sobre Renta, gastos y registros." />
+        <title>RHAI: Red Hispana de Apoyo a los Inmigrantes | Tu Asesoría Migratoria Confiable</title>
+        <meta name="description" content="RHAI te guía en tu proceso migratorio a Estados Unidos, Europa, Canadá y el resto del mundo. Asesoría confiable y personalizada para hispanos." />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -124,9 +176,9 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
         {/* --- Header (Barra de Navegación) --- */}
         <header className="bg-blue-800 text-white p-4 shadow-md">
           <nav className="container mx-auto flex justify-between items-center">
-            <div className="text-6xl font-bold">ImpuestosRD</div>
+            <div className="text-6xl font-bold">RHAI</div>
             <ul className="hidden md:flex space-x-6">
-              <li><a href="#servicios" className="hover:text-red-400 transition duration-300">Servicios Fiscales</a></li>
+              <li><a href="#servicios" className="hover:text-red-400 transition duration-300">Servicios</a></li>
               <li><a href="#porque-elegirnos" className="hover:text-red-400 transition duration-300">Por Qué Elegirnos</a></li>
               <li><a href="#testimonios" className="hover:text-red-400 transition duration-300">Testimonios</a></li>
               <li key="agendar-desktop">
@@ -143,7 +195,7 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
           {isMobileMenuOpen && (
             <div className="md:hidden bg-blue-700 mt-4 py-2">
               <ul className="flex flex-col items-center space-y-4">
-                <li key="servicios-mobile"><a onClick={toggleMobileMenu} href="#servicios" className="block text-white hover:text-red-400 transition duration-300 py-2">Servicios Fiscales</a></li>
+                <li key="servicios-mobile"><a onClick={toggleMobileMenu} href="#servicios" className="block text-white hover:text-red-400 transition duration-300 py-2">Servicios</a></li>
                 <li key="porque-elegirnos-mobile"><a onClick={toggleMobileMenu} href="#porque-elegirnos" className="block text-white hover:text-red-400 transition duration-300 py-2">Por Qué Elegirnos</a></li>
                 <li key="testimonios-mobile"><a onClick={toggleMobileMenu} href="#testimonios" className="block text-white hover:text-red-400 transition duration-300 py-2">Testimonios</a></li>
                 <li key="agendar-mobile">
@@ -159,15 +211,15 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
 
         {/* --- Sección Hero --- */}
         <section className="relative bg-cover bg-center h-[600px] flex items-center justify-center text-white"
-          style={{ backgroundImage: "url('/images/impuestos.jpg')" }}> {/* La ruta de la imagen se ha actualizado aquí */}
+          style={{ backgroundImage: "url('/images/inmigra.jpg')" }}>
           <div className="absolute inset-0 bg-black opacity-50"></div>
 
           <div className="container mx-auto text-center z-10 p-4">
             <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4 text-white">
-              Simplifica tus Impuestos: <br /> Asesoría Fiscal Expertos en RD.
+              Tu Nuevo Capítulo Empieza Aquí: <br /> Asesoría Migratoria Confiable.
             </h1>
             <p className="text-xl md:text-2xl mb-8">
-              En ImpuestosRD te ofrecemos claridad y confianza para gestionar tus obligaciones fiscales <br className="hidden md:inline" /> sobre ITBIS, Impuesto Sobre Renta, gastos deducibles y registros.
+              En RHAI, la Red Hispana de Apoyo a los Inmigrantes, te guiamos con experiencia y cercanía en tu camino hacia <br className="hidden md:inline" /> Estados Unidos, Europa, Canadá y el resto del mundo.
             </p>
             <Link href="/agendar" className="inline-block bg-red-600 hover:bg-red-700 text-white text-xl font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 transform hover:scale-105">
               ¡Agenda tu Consulta Gratuita!
@@ -175,104 +227,101 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
           </div>
         </section>
 
+      
         {/* --- Sección Servicios --- */}
-        ---
         <section id="servicios" className="py-20 bg-gray-50">
           <div className="container mx-auto text-center px-4">
-            <h2 className="text-4xl font-bold text-blue-800 mb-2">Tu Tranquilidad Fiscal, Nuestra Misión.</h2>
-            <p className="text-xl text-gray-700 mb-12">Asesoría profesional para individuos y empresas.</p>
+            <h2 className="text-4xl font-bold text-blue-800 mb-2">Tu Éxito Migratorio, Nuestra Especialidad.</h2>
+            <p className="text-xl text-gray-700 mb-12">Solo pagas 50 dólares por procesos.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">📈</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Declaración de Impuesto Sobre Renta (ISR)</h3>
-                <p className="text-gray-600">Te asistimos en la preparación y presentación de tu declaración anual de ISR, asegurando el cumplimiento y optimización fiscal.</p>
+                <div className="text-red-600 text-5xl mb-4">💡</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Visados de Trabajo y Profesionales</h3>
+                <p className="text-gray-600">Descubre oportunidades laborales y asegura tu futuro profesional con nuestra asesoría experta.</p>
               </div>
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">🧾</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Gestión de ITBIS</h3>
-                <p className="text-gray-600">Manejo eficiente de tu ITBIS, desde la declaración mensual hasta la recuperación de créditos fiscales.</p>
+                <div className="text-red-600 text-5xl mb-4">🎓</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Visados de Estudio</h3>
+                <p className="text-gray-600">Accede a educación de calidad y experiencias internacionales con nuestra guía detallada.</p>
               </div>
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">💸</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Asesoría en Gastos Deducibles</h3>
-                <p className="text-gray-600">Identificamos y optimizamos tus gastos deducibles para reducir tu carga impositiva, siempre dentro del marco legal.</p>
+                <div className="text-red-600 text-5xl mb-4">👨‍👩‍👧‍👦</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Reunificación Familiar</h3>
+                <p className="text-gray-600">Une a tus seres queridos y construye un hogar sin fronteras con nuestro acompañamiento legal.</p>
               </div>
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">📝</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Registros Contables y Fiscales</h3>
-                <p className="text-gray-600">Organizamos y mantenemos tus registros contables y fiscales al día, esenciales para auditorías y cumplimiento.</p>
+                <div className="text-red-600 text-5xl mb-4">🛡️</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Asilo con Pruebas Sólidas</h3>
+                <p className="text-gray-600">Te asesoramos en la preparación y presentación de casos de asilo con el soporte de pruebas contundentes, maximizando tus posibilidades de protección.</p>
               </div>
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">📊</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Planificación Fiscal Estratégica</h3>
-                <p className="text-gray-600">Desarrollamos estrategias fiscales personalizadas para minimizar riesgos y maximizar tus beneficios a largo plazo.</p>
+                <div className="text-red-600 text-5xl mb-4">🏠</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Residencia y Ciudadanía</h3>
+                <p className="text-gray-600">Tu camino hacia la estabilidad y los derechos plenos, paso a paso, con nuestro equipo.</p>
               </div>
               <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300">
-                <div className="text-red-600 text-5xl mb-4">🏛️</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Trámites ante la DGII</h3>
-                <p className="text-gray-600">Te representamos y gestionamos todos tus trámites ante la Dirección General de Impuestos Internos (DGII).</p>
+                <div className="text-red-600 text-5xl mb-4">⚖️</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-3">Casos Especiales y Recursos</h3>
+                <p className="text-gray-600">Soluciones a medida para situaciones complejas y orientación continua post-migratoria.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- Sección Por Qué Elegirnos --- */}
-        ---
         <section id="porque-elegirnos" className="py-20 bg-white">
           <div className="container mx-auto text-center px-4">
-            <h2 className="text-4xl font-bold text-blue-800 mb-12">ImpuestosRD: Tu Socio en Cumplimiento Fiscal.</h2>
+            <h2 className="text-4xl font-bold text-blue-800 mb-12">RHAI: Tu Apoyo Genuino en Cada Paso.</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               <div className="flex flex-col items-center p-6">
                 <div className="text-red-600 text-6xl mb-4">✅</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Expertos en Normativa Dominicana</h3>
-                <p className="text-gray-600 text-center">Conocimiento profundo de las leyes y regulaciones fiscales de la RD.</p>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Experiencia Comprobada</h3>
+                <p className="text-gray-600 text-center">Más de [X] años/casos de éxito guiando a familias como la tuya.</p>
               </div>
               <div className="flex flex-col items-center p-6">
                 <div className="text-red-600 text-6xl mb-4">🤝</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Asesoría Personalizada</h3>
-                <p className="text-gray-600 text-center">Soluciones fiscales adaptadas a tus necesidades específicas, ya seas individuo o empresa.</p>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Atención Personalizada</h3>
+                <p className="text-gray-600 text-center">Cada historia es única. Te ofrecemos un plan a tu medida.</p>
               </div>
               <div className="flex flex-col items-center p-6">
                 <div className="text-red-600 text-6xl mb-4">🗣️</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Comunicación Clara y Directa</h3>
-                <p className="text-gray-600 text-center">Explicamos conceptos fiscales complejos de manera sencilla para tu comprensión.</p>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Comunicación Clara y en Tu Idioma</h3>
+                <p className="text-gray-600 text-center">Rompiendo barreras lingüísticas y burocráticas para tu tranquilidad.</p>
               </div>
               <div className="flex flex-col items-center p-6">
-                <div className="text-red-600 text-6xl mb-4">🔒</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Confidencialidad y Seguridad</h3>
-                <p className="text-gray-600 text-center">Manejamos tu información con la máxima discreción y seguridad.</p>
+                <div className="text-red-600 text-6xl mb-4">🌐</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Red Global de Apoyo</h3>
+                <p className="text-gray-600 text-center">Conexiones y recursos en tus destinos soñados: EE. UU., Europa, Canadá y más.</p>
               </div>
               <div className="flex flex-col items-center p-6">
                 <div className="text-red-600 text-6xl mb-4">💡</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Optimización Fiscal</h3>
-                <p className="text-gray-600 text-center">Te ayudamos a aprovechar todas las oportunidades legales para reducir tu carga fiscal.</p>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Transparencia Total</h3>
+                <p className="text-gray-600 text-center">Procesos claros, sin sorpresas ni costos ocultos.</p>
               </div>
               <div className="flex flex-col items-center p-6">
-                <div className="text-red-600 text-6xl mb-4">⏱️</div>
-                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Eficiencia y Puntualidad</h3>
-                <p className="text-gray-600 text-center">Aseguramos que tus declaraciones y trámites se realicen a tiempo, evitando multas.</p>
+                <div className="text-red-600 text-6xl mb-4">⚖️</div>
+                <h3 className="text-2xl font-semibold text-blue-700 mb-2">Casos Especiales y Recursos</h3>
+                <p className="text-gray-600 text-center">Soluciones a medida para situaciones complejas y orientación continua post-migratoria.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- Sección Testimonios --- */}
-        ---
         <section id="testimonios" className="py-20 bg-gray-100">
           <div className="container mx-auto text-center px-4">
-            <h2 className="text-4xl font-bold text-blue-800 mb-12">Historias de Éxito: Contribuyentes Tranquilos.</h2>
+            <h2 className="text-4xl font-bold text-blue-800 mb-12">Historias de Éxito: Familias que Ya Cumplieron su Sueño.</h2>
             <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-              <p className="text-gray-700 italic text-lg mb-6">Gracias a ImpuestosRD, mi negocio ahora cumple con todas las normativas fiscales. Me ahorraron tiempo y preocupaciones, ¡totalmente recomendados!</p>
-              <p className="font-semibold text-blue-700">- Juan P., Dueño de Pequeña Empresa (Santo Domingo)</p>
+              <p className="text-gray-700 italic text-lg mb-6">Gracias a Rhai, mi familia y yo estamos viviendo nuestro sueño en Canadá. Su apoyo y claridad fueron invaluables en cada etapa del proceso. ¡Altamente recomendados!</p>
+              <p className="font-semibold text-blue-700">- María G., Colombia (Residente en Canadá)</p>
             </div>
           </div>
         </section>
 
         {/* --- Sección Preguntas Frecuentes (FAQ) --- */}
-        ---
         <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-blue-800 text-center mb-12">¿Tienes Preguntas Fiscales? Tenemos las Respuestas.</h2>
+            <h2 className="text-4xl font-bold text-blue-800 text-center mb-12">¿Tienes Preguntas? Tenemos las Respuestas.</h2>
             <div className="max-w-3xl mx-auto">
               {faqItems.map((item: FAQItem, index: number) => (
                 <div key={index} className="border-b border-gray-200 py-4">
@@ -295,12 +344,11 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
         </section>
 
         {/* --- Sección CTA para Agendar Consulta --- */}
-        ---
         <section id="agenda-consulta-cta" className="py-20 bg-gray-50">
           <div className="container mx-auto text-center px-4">
             <h2 className="text-4xl font-bold text-blue-800 mb-8">¡Agenda Tu Consulta Gratuita!</h2>
             <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-              ¿Listo para poner tus impuestos en orden? Agenda una consulta gratuita con nuestros expertos para aclarar tus dudas fiscales.
+              ¿Listo para dar el siguiente paso? Agenda una consulta gratuita con nuestros expertos para diseñar el plan migratorio de tus sueños.
             </p>
             <Link href="/agendar" className="inline-block bg-red-600 hover:bg-red-700 text-white text-xl font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 transform hover:scale-105">
               Ir a la Página de Agendamiento
@@ -312,15 +360,13 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
         </section>
 
         {/* --- Sección de Pago con PayPal - Cliente Elige --- */}
-        ---
         <section className="py-20 bg-blue-100">
           <div className="container mx-auto text-center px-4">
-            <h2 className="text-4xl font-bold text-blue-800 mb-8">Escríbenos y recibe una cotización desde 1000 pesos mensuales en adelante</h2>
+            <h2 className="text-4xl font-bold text-blue-800 mb-8">Apoya Nuestra Misión o Patrocina un Inmigrante de bajos recursos</h2>
             <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-              Ingresa un monto personalizado para apoyar nuestras iniciativas de educación fiscal:
+              Selecciona el tipo de pago que deseas realizar o ingresa un monto personalizado para tu donación:
             </p>
             <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {/* Solo el botón "Aporte (Monto Abierto)" permanece */}
               {paymentOptions.map((option) => (
                 <button
                   key={option.id}
@@ -364,23 +410,24 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
               ))}
             </div>
 
-            {/* El input del monto personalizado siempre estará visible ya que es la única opción */}
-            <div className="mt-6 mb-8 max-w-xs mx-auto">
-              <label htmlFor="customAmountInput" className="block text-lg font-medium text-gray-700 mb-2">
-                Ingresa tu monto en USD:
-              </label>
-              <input
-                type="text"
-                id="customAmountInput"
-                value={customAmount}
-                onChange={handleCustomAmountChange}
-                placeholder="Ej: 10.00"
-                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center text-xl font-bold"
-              />
-              {customAmount && parseFloat(customAmount) <= 0 && (
-                <p className="text-red-500 text-sm mt-2">El monto debe ser mayor a 0.</p>
-              )}
-            </div>
+            {isCustomAmountSelected && (
+              <div className="mt-6 mb-8 max-w-xs mx-auto">
+                <label htmlFor="customAmountInput" className="block text-lg font-medium text-gray-700 mb-2">
+                  Ingresa tu monto de donación en USD:
+                </label>
+                <input
+                  type="text"
+                  id="customAmountInput"
+                  value={customAmount}
+                  onChange={handleCustomAmountChange}
+                  placeholder="Ej: 10.00"
+                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center text-xl font-bold"
+                />
+                {customAmount && parseFloat(customAmount) <= 0 && (
+                  <p className="text-red-500 text-sm mt-2">El monto debe ser mayor a 0.</p>
+                )}
+              </div>
+            )}
 
             {isPayPalButtonEnabled ? (
               <div className="max-w-xs mx-auto">
@@ -393,32 +440,30 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
                 />
               </div>
             ) : (
-              <p className="text-lg text-gray-600">Por favor, ingresa un monto válido.</p>
+              <p className="text-lg text-gray-600">Por favor, selecciona una opción de pago o ingresa un monto válido.</p>
             )}
           </div>
         </section>
 
         {/* --- Sección Contacto / CTA Final --- */}
-        ---
         <section id="contacto" className="py-20 bg-blue-800 text-white">
           <div className="container mx-auto text-center px-4">
-            <h2 className="text-4xl font-bold mb-8">¿Aún Tienes Dudas Fiscales? Contáctanos Directamente.</h2>
-            <p className="text-xl mb-10">No dejes tus impuestos al azar. Permítenos ser tu guía experta para un cumplimiento fiscal óptimo.</p>
+            <h2 className="text-4xl font-bold mb-8">¿Aún Tienes Dudas? Contáctanos Directamente.</h2>
+            <p className="text-xl mb-10">No dejes tu futuro al azar. Permítenos ser tu guía experta en el camino hacia tu nuevo hogar.</p>
 
             <div className="mt-12 text-lg">
               <p>Puedes contactarnos vía email o teléfono:</p>
-              <p className="mt-2">📧 <a href="mailto:info@impuestosrd.com" className="text-white hover:underline">info@impuestosrd.com</a></p>
-              <p className="mt-2">📞 <a href="tel:+18091234567" className="text-white hover:underline">+1 (809) 123-4567</a></p>
+              <p className="mt-2">📧 <a href="mailto:inmigrationsrhai@gmail.com" className="text-white hover:underline">inmigrationsrhai@gmail.com</a></p>
+              <p className="mt-2">📞 <a href="tel:+19292417449" className="text-white hover:underline">+1 (929) 241-7449</a></p>
             </div>
           </div>
         </section>
 
         {/* --- Footer --- */}
-        ---
         <footer className="bg-blue-900 text-white py-8">
           <div className="container mx-auto text-center px-4">
-            <div className="text-2xl font-bold mb-4">ImpuestosRD</div>
-            <p className="mb-4">Tu Asesoría Fiscal en República Dominicana</p>
+            <div className="text-2xl font-bold mb-4">RHAI</div>
+            <p className="mb-4">Red Hispana de Apoyo a los Inmigrantes</p>
 
             <div className="flex justify-center space-x-6 mb-6">
               <a href="#" className="text-white hover:text-red-400 transition duration-300 text-2xl"><FaFacebookF /></a>
@@ -431,10 +476,18 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
               <a href="/terminos-condiciones" className="text-white hover:underline">Términos y Condiciones</a>
             </div>
 
-            <p className="text-sm">&copy; {new Date().getFullYear()} ImpuestosRD. Todos los derechos reservados.</p>
+            <p className="text-sm">&copy; {new Date().getFullYear()} RHAI. Todos los derechos reservados.</p>
           </div>
         </footer>
       </main>
+
+      {/* --- SE HAN ELIMINADO TODOS LOS COMPONENTES DE CHAT EN VIVO NATIVO --- */}
+      {/* El botón de chat siempre visible */}
+      {/* <ChatButton onClick={toggleChat} /> */}
+      {/* La ventana de chat solo se muestra si isChatOpen es true Y tenemos un conversationId y userId */}
+      {/* {isChatOpen && conversationId && userId && (
+        <ChatWindow onClose={toggleChat} userId={userId} conversationId={conversationId} />
+      )} */}
     </>
   );
 }
