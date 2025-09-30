@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // pages/index.tsx
 
 import Head from 'next/head';
@@ -163,10 +164,186 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
   // const toggleChat = () => {
   //   setIsChatOpen(!isChatOpen);
   // };
+=======
+// src/pages/index.tsx
+import Head from 'next/head'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+
+type Option = { id: 'usa' | 'canada' | 'europa' | 'otros'; label: string; emoji: string }
+
+const OPTIONS: readonly Option[] = [
+  { id: 'usa',    label: 'Estados Unidos', emoji: '🇺🇸' },
+  { id: 'canada', label: 'Canadá',         emoji: '🇨🇦' },
+  { id: 'europa', label: 'Europa',         emoji: '🇪🇺' },
+  { id: 'otros',  label: 'Otros países',   emoji: '🌎'  },
+] as const
+
+type OptId = Option['id']
+
+const SEARCH_ALIASES: Record<OptId, string[]> = {
+  usa:    ['usa','estados unidos','eeuu','ee.uu','u.s.a','us'],
+  canada: ['canada','canadá','ca'],
+  europa: ['europa','europe','ue','union europea','unión europea'],
+  otros:  ['otros','otros paises','otros países','resto','latam','sudamerica','sudamérica','otra'],
+}
+
+const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+const isClient = () => typeof window !== 'undefined'
+
+// -------- Alertas por búsqueda (tu lógica original, con debounce y 1 vez por sesión)
+const ALERT_KEY = 'searchAlertSent'
+const MIN_CHARS = 2
+const DEBOUNCE_MS = 700
+
+function useSearchAlarm(q: string) {
+  const timerRef = useRef<number | null>(null)
+  const firedRef = useRef(false)
+
+  useEffect(() => {
+    if (!isClient()) return
+    const term = q.trim()
+    if (term.length < MIN_CHARS || firedRef.current) {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+      return
+    }
+    timerRef.current = window.setTimeout(async () => {
+      try {
+        if (!sessionStorage.getItem(ALERT_KEY)) {
+          sessionStorage.setItem(ALERT_KEY, '1')
+          await fetch('/api/owner-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: term, url: location.href, ts: Date.now() }),
+          })
+        }
+        const T: any = (window as any).Tawk_API
+        if (T?.addEvent) T.addEvent('search_started', { query: term })
+        if (T?.maximize) T.maximize()
+      } catch {}
+      finally { firedRef.current = true }
+    }, DEBOUNCE_MS)
+
+    return () => { if (timerRef.current) window.clearTimeout(timerRef.current) }
+  }, [q])
+}
+
+// -------- Proactivo a los 15s: abre Tawk o muestra toast fallback
+const PROACTIVE_KEY = 'proactiveHelpShown'
+function useProactiveHelp(delayMs = 15000) {
+  useEffect(() => {
+    if (!isClient()) return
+    if (sessionStorage.getItem(PROACTIVE_KEY)) return
+    const t = window.setTimeout(() => {
+      try {
+        const T: any = (window as any).Tawk_API
+        if (T?.maximize) {
+          T.maximize()
+          if (T?.addEvent) T.addEvent('proactive_help', { source: 'index', delayMs })
+        } else {
+          // fallback: muestra el toast local
+          window.dispatchEvent(new CustomEvent('rhai:showProactiveToast'))
+        }
+      } catch {}
+      finally {
+        sessionStorage.setItem(PROACTIVE_KEY, '1')
+      }
+    }, delayMs)
+    return () => window.clearTimeout(t)
+  }, [delayMs])
+}
+
+// -------- Toast fallback minimalista
+function ProactiveToast() {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const on = () => setShow(true)
+    window.addEventListener('rhai:showProactiveToast', on as EventListener)
+    return () => window.removeEventListener('rhai:showProactiveToast', on as EventListener)
+  }, [])
+  if (!show) return null
+
+  const openChat = () => {
+    const T: any = (window as any).Tawk_API
+    if (T?.maximize) T.maximize()
+    else window.location.href = '/agendar'
+    setShow(false)
+  }
+
+  return (
+    <div className="fixed z-50 bottom-5 right-5 max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl p-4">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">💬</div>
+        <div className="flex-1">
+          <div className="font-semibold text-gray-900">¿En qué puedo ayudarte?</div>
+          <div className="text-sm text-gray-600 mt-1">Estoy aquí ahora mismo para guiar tu proceso.</div>
+          <div className="mt-3 flex gap-2">
+            <button onClick={openChat}
+              className="px-3 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800">
+              Chatear ahora
+            </button>
+            <button onClick={() => setShow(false)}
+              className="px-3 py-2 rounded-lg border text-sm text-gray-700 hover:bg-gray-50">
+              Luego
+            </button>
+          </div>
+        </div>
+        <button aria-label="Cerrar" onClick={() => setShow(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+    </div>
+  )
+}
+
+export default function Home() {
+  const router = useRouter()
+  const [q, setQ] = useState('')
+  const [focused, setFocused] = useState(false)
+
+  // Proactivo a los 15s
+  useProactiveHelp(15000)
+  // Alarma por búsqueda
+  useSearchAlarm(q)
+
+  const NORMALIZED = useMemo(
+    () => OPTIONS.map(o => ({ ...o, labelN: norm(o.label), aliasesN: SEARCH_ALIASES[o.id].map(norm) })),
+    []
+  )
+
+  const suggestions = useMemo(() => {
+    const s = norm(q)
+    if (!s) return OPTIONS
+    return NORMALIZED.filter(o => o.labelN.includes(s) || o.aliasesN.some(a => a.includes(s) || s.includes(a)))
+  }, [q, NORMALIZED])
+
+  const go = useCallback((id: OptId) => { router.push(`/destino/${id}`) }, [router])
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const first = suggestions[0]
+    if (first) go(first.id as OptId)
+  }
+
+  useEffect(() => { OPTIONS.forEach(o => router.prefetch(`/destino/${o.id}`)) }, [router])
+
+  useEffect(() => {
+    const handler = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Enter' || !focused) return
+      ev.preventDefault()
+      const first = suggestions[0]
+      if (first) go(first.id as OptId)
+    }
+    if (isClient()) {
+      window.addEventListener('keydown', handler)
+      return () => window.removeEventListener('keydown', handler)
+    }
+  }, [focused, suggestions, go])
+>>>>>>> 0aecebb (Deploy inicial RHAI)
 
   return (
     <>
       <Head>
+<<<<<<< HEAD
         <title>RHAI: Red Hispana de Apoyo a los Inmigrantes | Tu Asesoría Migratoria Confiable</title>
         <meta name="description" content="RHAI te guía en tu proceso migratorio a Estados Unidos, Europa, Canadá y el resto del mundo. Asesoría confiable y personalizada para hispanos." />
         <link rel="icon" href="/favicon.ico" />
@@ -491,3 +668,61 @@ export default function Home({ paypalSdkLoaded }: HomePageProps) {
     </>
   );
 }
+=======
+        <title>RHAI | Elige tu destino</title>
+        <meta name="description" content="Elige tu destino migratorio y entra directo a la página específica: Estados Unidos, Canadá, Europa u otros países." />
+        <link rel="canonical" href="https://tu-dominio.com/" />
+        <meta name="robots" content="index,follow" />
+      </Head>
+
+      <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white">
+        {/* barra búsqueda */}
+        <section className="sticky top-0 z-20 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b">
+          <div className="container mx-auto px-4 py-6">
+            <form onSubmit={onSubmit} role="search" aria-label="Buscar destino" className="relative max-w-5xl mx-auto">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder="Busca tu destino: Estados Unidos, Canadá, Europa, Otros países…"
+                className="w-full text-lg md:text-xl rounded-2xl border border-gray-200 px-5 py-4 shadow-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                aria-autocomplete="list"
+                autoComplete="off"
+                inputMode="search"
+              />
+              {q && (
+                <button type="button" onClick={() => setQ('')} aria-label="Borrar búsqueda"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+              )}
+            </form>
+          </div>
+        </section>
+
+        {/* tarjetas */}
+        <section className="container mx-auto px-4 py-14">
+          <h1 className="text-center text-4xl md:text-5xl font-extrabold text-blue-900 mb-3">Elige tu destino</h1>
+          <p className="text-center text-gray-600 mb-10">Clic en una opción y entras directo. Sin formularios.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+            {suggestions.map((o) => (
+              <Link key={o.id} href={`/destino/${o.id}`}
+                className="group rounded-3xl border border-gray-200 bg-white p-8 shadow-sm hover:shadow-xl transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-blue-200">
+                <div className="text-6xl mb-4 select-none">{o.emoji}</div>
+                <div className="text-2xl font-bold text-blue-800">{o.label}</div>
+                <div className="text-sm text-gray-500 mt-1">Abrir página de {o.label.toLowerCase()}</div>
+                <div className="mt-6 inline-flex items-center gap-2 text-blue-700 font-semibold group-hover:gap-3 transition">
+                  Ver más <span>→</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* toast fallback proactivo */}
+        <ProactiveToast />
+      </main>
+    </>
+  )
+}
+>>>>>>> 0aecebb (Deploy inicial RHAI)

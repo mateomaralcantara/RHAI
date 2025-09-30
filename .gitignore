@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
+=======
+node_modules/
+.next/
+.env
+.env.local
+.env.production
+>>>>>>> 0aecebb (Deploy inicial RHAI)
