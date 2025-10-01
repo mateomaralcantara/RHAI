@@ -1,4 +1,3 @@
-// pages/api/appointments.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
@@ -7,7 +6,7 @@ type Body = {
   email?: string;
   phone?: string;
   message?: string;
-  destination?: string; // opcional: usa "usa", "canada", "europa", "otros"
+  destination?: "usa" | "canada" | "europa" | "otros";
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,25 +15,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { name = "", email = "", phone = "", message = "", destination = "" } = (req.body || {}) as Body;
+    const { name, email, phone, message, destination } = req.body as Body;
 
-    // Validación mínima
-    if (!name.trim() || !email.trim()) {
+    if (!name || !email) {
       return res.status(400).json({ ok: false, error: "Faltan campos obligatorios (name, email)" });
     }
+    if (!destination) {
+      return res.status(400).json({ ok: false, error: "Falta destination" });
+    }
+
+    const row = {
+      name,
+      email,
+      phone: phone || null,
+      message: message || null,
+      destination, // <- guardamos destino
+    };
 
     const { error, data } = await supabaseAdmin
       .from("appointments")
-      .insert([
-        {
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone?.trim() || null,
-          message: message?.trim() || null,
-          destination: destination?.trim() || null,
-          // status se mantiene por default = 'new'
-        },
-      ])
+      .insert([row])
       .select("id")
       .single();
 
@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(201).json({ ok: true, id: data?.id });
   } catch (e: any) {
-    console.error("[appointments] unexpected:", e);
+    console.error(e);
     return res.status(500).json({ ok: false, error: "Error inesperado" });
   }
 }

@@ -1,15 +1,19 @@
 // src/lib/supabaseAdmin.ts
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const url =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_URL
+
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!url || !serviceRoleKey) {
-  throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en variables de entorno')
+  throw new Error('Faltan SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE(_KEY)')
 }
 
-// Cliente ADMIN: usar SIEMPRE en backend (API routes / server actions)
-// NUNCA exponer SERVICE_ROLE en el cliente
+// Cliente ADMIN: usar solo en backend (API routes)
 export const supabaseAdmin = createClient(url, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
+  auth: { persistSession: false, autoRefreshToken: false },
 })

@@ -1,5 +1,12 @@
-
+// @ts-nocheck
 import { useState } from "react";
+
+const DESTS = [
+  { id: "usa",    label: "Estados Unidos", emoji: "🇺🇸" },
+  { id: "canada", label: "Canadá",         emoji: "🇨🇦" },
+  { id: "europa", label: "Europa",         emoji: "🇪🇺" },
+  { id: "otros",  label: "Otros países",   emoji: "🌎"  },
+];
 
 export default function ContactForm() {
   const [form, setForm] = useState({
@@ -7,6 +14,7 @@ export default function ContactForm() {
     email: "",
     phone: "",
     message: "",
+    destination: "", // <- requerido
   });
   const [loading, setLoading] = useState(false);
   const [ok, setOk] = useState(null);
@@ -24,23 +32,16 @@ export default function ContactForm() {
     setError(null);
 
     try {
-      // Enviamos preferred_date como null (lo quitaste de la UI y de la DB)
-      const payload = {
-        ...form,
-        preferred_date: null,
-      };
-
       const resp = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
-
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) throw new Error(data.error || "Error al enviar");
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) throw new Error(data.error || "No se pudo guardar el registro");
 
       setOk(true);
-      setForm({ name: "", email: "", phone: "", message: "" });
+      setForm({ name: "", email: "", phone: "", message: "", destination: "" });
     } catch (err) {
       setOk(false);
       setError(err?.message || "Ups, algo salió mal");
@@ -50,7 +51,7 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white shadow rounded-2xl p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white shadow rounded-2xl p-6 space-y-5">
       <div>
         <label className="block text-sm font-medium mb-1">Nombre*</label>
         <input
@@ -87,6 +88,32 @@ export default function ContactForm() {
         />
       </div>
 
+      {/* DESTINO (requerido) */}
+      <div>
+        <label className="block text-sm font-medium mb-2">Destino*</label>
+        <div className="grid grid-cols-2 gap-3">
+          {DESTS.map((d) => (
+            <label
+              key={d.id}
+              className={`cursor-pointer border rounded-xl px-4 py-3 flex items-center gap-3
+                ${form.destination === d.id ? "ring-2 ring-blue-500" : "hover:bg-gray-50"}`}
+            >
+              <input
+                type="radio"
+                name="destination"
+                value={d.id}
+                checked={form.destination === d.id}
+                onChange={handleChange}
+                className="sr-only"
+                required
+              />
+              <span className="text-2xl">{d.emoji}</span>
+              <span className="font-medium">{d.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Mensaje</label>
         <textarea
@@ -102,9 +129,9 @@ export default function ContactForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl px-4 py-2 font-semibold bg-black text-white disabled:opacity-60"
+        className="w-full rounded-xl px-4 py-3 font-semibold bg-black text-white disabled:opacity-60"
       >
-        {loading ? "Enviando..." : "Contactar"}
+        {loading ? "Enviando..." : "Enviar"}
       </button>
 
       {ok === true && <p className="text-green-700 text-sm">¡Listo! Te contactaremos pronto. ✅</p>}

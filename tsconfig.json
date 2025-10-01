@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.d.ts"
-  ],
+, "src/components/ContactForm.jsx"  ],
   "exclude": [
     "node_modules"
   ]
