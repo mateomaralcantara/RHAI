@@ -1,7 +1,7 @@
 // pages/agendar.tsx
 import Layout from '../components/Layout';
 // Asegúrate de que esta línea sea correcta, ya que renombraste el archivo.
-import ContactForm from '../components/ContactForm'; // <--- CAMBIO AQUÍ
+import ContactForm from '../components/ContactForm.jsx'; // <--- CAMBIO AQUÍ
 
 export default function AgendarPage() {
   return (
