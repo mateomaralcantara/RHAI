@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import type { ReactNode, FormEvent } from 'react'
 
 type Option = { id: 'usa' | 'canada' | 'europa' | 'otros'; label: string; emoji: string }
 
@@ -26,45 +27,63 @@ const SEARCH_ALIASES: Record<OptId, string[]> = {
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
 
 const ALERT_KEY = 'searchAlertSent'
+const PROMPT_KEY = 'tawkPromptShown'
+
+type GradientFrameProps = { className?: string; children: ReactNode }
+const GradientFrame = ({ className = '', children }: GradientFrameProps) => (
+  <div
+    className={[
+      'p-[16px]',
+      'bg-[conic-gradient(at_50%_50%,#ff006a_0deg,#ff9d00_55deg,#00d1ff_120deg,#7c3aed_180deg,#10b981_240deg,#ef4444_300deg,#ff006a_360deg)]',
+      'rounded-none shadow-[0_12px_40px_rgba(17,24,39,0.15)]',
+      className,
+    ].join(' ')}
+  >
+    <div className="rounded-none bg-white ring-2 ring-black/5">{children}</div>
+  </div>
+)
 
 export default function Home() {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [focused, setFocused] = useState(false)
-  const debounceRef = useRef<number | null>(null)
+  const [countMsg, setCountMsg] = useState('') // aria-live
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ---- Alarma + Tawk on search (debounced) ----
   const fireSearchEvents = useCallback((term: string) => {
-    if (!sessionStorage.getItem(ALERT_KEY)) {
-      sessionStorage.setItem(ALERT_KEY, '1')
-      fetch('/api/owner-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: term, url: location.href, ts: Date.now() }),
-      }).catch(() => {})
-    }
-    const tryTawk = (tries = 10) => {
-      const T: any = (window as any).Tawk_API
-      if (T && typeof T.addEvent === 'function') {
-        try {
-          T.addEvent('search_started', { query: term })
-          if (typeof T.maximize === 'function') T.maximize()
-        } catch {}
-      } else if (tries > 0) {
-        setTimeout(() => tryTawk(tries - 1), 400)
+    if (typeof window === 'undefined') return
+    try {
+      if (!sessionStorage.getItem(ALERT_KEY)) {
+        sessionStorage.setItem(ALERT_KEY, '1')
+        fetch('/api/owner-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: term, url: window.location.href, ts: Date.now() }),
+        }).catch(() => {})
       }
-    }
-    tryTawk()
+
+      const tryTawk = (tries = 10) => {
+        const T: any = (window as any).Tawk_API
+        if (T && typeof T.addEvent === 'function') {
+          try {
+            T.addEvent('search_started', { query: term })
+            if (typeof T.maximize === 'function') T.maximize()
+          } catch {}
+        } else if (tries > 0) {
+          setTimeout(() => tryTawk(tries - 1), 400)
+        }
+      }
+      tryTawk()
+    } catch {}
   }, [])
 
   const handleSearchChange = (value: string) => {
     setQ(value)
     const v = value.trim()
-    if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     if (v.length < 2) return
-    debounceRef.current = window.setTimeout(() => {
-      fireSearchEvents(v)
-    }, 700)
+    debounceRef.current = setTimeout(() => fireSearchEvents(v), 700)
   }
 
   // Sugerencias filtradas
@@ -78,11 +97,16 @@ export default function Home() {
     })
   }, [q])
 
+  // aria-live con recuento
+  useEffect(() => {
+    setCountMsg(`${suggestions.length} resultado${suggestions.length === 1 ? '' : 's'}`)
+  }, [suggestions.length])
+
   const go = useCallback((id: OptId) => {
     router.push(`/destino/${id}`)
   }, [router])
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const first = suggestions[0]
     if (first) go(first.id)
@@ -93,55 +117,27 @@ export default function Home() {
     OPTIONS.forEach(o => router.prefetch(`/destino/${o.id}`))
   }, [router])
 
-  // Enter global cuando el input está enfocado
-  useEffect(() => {
-    const handler = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Enter' || !focused) return
-      ev.preventDefault()
-      const first = suggestions[0]
-      if (first) go(first.id)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [focused, suggestions, go])
-
   // Limpieza del debounce
   useEffect(() => {
     return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [])
 
-  // Auto-prompt Tawk tras 15s
+  // Auto-prompt Tawk tras 15s (una vez por sesión)
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (sessionStorage.getItem(PROMPT_KEY)) return
     const t = window.setTimeout(() => {
-      const T: any = (window as any).Tawk_API
       try {
+        const T: any = (window as any).Tawk_API
         if (T?.addEvent) T.addEvent('auto_prompt', { page: 'home' })
         if (T?.maximize) T.maximize()
+        sessionStorage.setItem(PROMPT_KEY, '1')
       } catch {}
     }, 15000)
     return () => window.clearTimeout(t)
   }, [])
-
-  // Marco con borde gradiente MUY grueso y definido (cuadrado)
-  const GradientFrame: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
-    <div
-      className={[
-        // grosor de borde: ajusta aquí (12–20px)
-        'p-[16px]',
-        // gradiente muy saturado/definido
-        'bg-[conic-gradient(at_50%_50%,#ff006a_0deg,#ff9d00_55deg,#00d1ff_120deg,#7c3aed_180deg,#10b981_240deg,#ef4444_300deg,#ff006a_360deg)]',
-        'rounded-none shadow-[0_12px_40px_rgba(17,24,39,0.15)]',
-        className,
-      ].join(' ')}
-    >
-      {/* “borde interno” sutil para definición */}
-      <div className="rounded-none bg-white ring-2 ring-black/5">
-        {children}
-      </div>
-    </div>
-  )
 
   return (
     <>
@@ -174,7 +170,9 @@ export default function Home() {
               <div className="mt-10 max-w-4xl mx-auto">
                 <form onSubmit={onSubmit} role="search" aria-label="Buscar destino">
                   <GradientFrame className="shadow-xl">
+                    <label htmlFor="search" className="sr-only">Buscar destino</label>
                     <input
+                      id="search"
                       value={q}
                       onChange={(e) => handleSearchChange(e.target.value)}
                       onFocus={() => setFocused(true)}
@@ -182,9 +180,12 @@ export default function Home() {
                       placeholder="Busca: Estados Unidos, Canadá, Europa u Otros…"
                       className="w-full text-2xl md:text-3xl px-6 py-6 outline-none"
                       aria-autocomplete="list"
+                      aria-expanded={focused}
                     />
                   </GradientFrame>
                 </form>
+                {/* anuncio accesible del recuento */}
+                <p aria-live="polite" className="sr-only">{countMsg}</p>
               </div>
 
               {/* Grid muy amplia, tarjetas con marco grueso */}
